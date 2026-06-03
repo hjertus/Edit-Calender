@@ -1,0 +1,15 @@
+services:
+  calfilter:
+    build: .
+    container_name: calfilter
+    restart: unless-stopped
+    ports:
+      - "8742:8742"
+    volumes:
+      - calfilter_data:/data
+    environment:
+      APP_PASSWORD: ${APP_PASSWORD}
+
+
+volumes:
+  calfilter_data:

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cal Filter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0c0e12;--line:#e2e4ea;--line2:#cbd0db;--muted:#8891a8;--muted2:#6b7490;
+  --text:#1a1d24;--text2:#3d4358;--accent:#1a56f0;--accent-bg:#eef3ff;
+  --danger:#e03131;--danger-bg:#fff5f5;--success:#0f9960;--paper:#fafbfc;--white:#fff;
+}
+body{background:var(--paper);color:var(--text);font-family:'Geist',sans-serif;font-size:15px;min-height:100vh;}
+
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(250,251,252,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:56px;
+}
+.brand{display:flex;align-items:baseline;gap:.5rem;}
+.brand-name{font-family:'Instrument Serif',serif;font-size:1.35rem;color:var(--ink);}
+.brand-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;display:inline-block;margin-bottom:2px;}
+.brand-sub{font-family:'Geist Mono',monospace;font-size:.7rem;color:var(--muted);}
+
+.logout-btn{
+  font-size:.8rem;color:var(--muted2);background:none;border:1px solid var(--line);
+  border-radius:7px;padding:.3rem .75rem;cursor:pointer;font-family:'Geist',sans-serif;
+  transition:all .12s;text-decoration:none;
+}
+.logout-btn:hover{border-color:var(--line2);color:var(--text);}
+
+.hero{padding:3.5rem 2rem 1.5rem;max-width:860px;margin:0 auto;}
+.hero h1{font-family:'Instrument Serif',serif;font-size:clamp(2rem,5vw,3rem);line-height:1.15;letter-spacing:-.02em;color:var(--ink);margin-bottom:.6rem;}
+.hero h1 em{font-style:italic;color:var(--accent);}
+.hero p{color:var(--muted2);font-size:.95rem;max-width:500px;margin-bottom:2rem;}
+
+.add-form{
+  background:var(--white);border:1px solid var(--line);border-radius:16px;
+  padding:1.75rem;max-width:600px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+}
+.add-form h2{font-size:.8rem;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1.25rem;}
+.field{margin-bottom:.9rem;}
+.field:last-of-type{margin-bottom:0;}
+.field label{display:block;font-size:.78rem;font-weight:500;color:var(--text2);margin-bottom:.35rem;}
+.field input{
+  width:100%;padding:.62rem .85rem;
+  background:var(--paper);border:1px solid var(--line);border-radius:8px;
+  font-family:'Geist',sans-serif;font-size:.88rem;color:var(--text);
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,240,.1);background:var(--white);}
+.field input::placeholder{color:var(--muted);}
+.mono input{font-family:'Geist Mono',monospace;font-size:.78rem;}
+
+.form-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1.25rem;}
+.form-hint{font-size:.75rem;color:var(--muted);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.58rem 1.2rem;border-radius:8px;border:none;
+  font-family:'Geist',sans-serif;font-size:.875rem;font-weight:600;
+  cursor:pointer;transition:all .12s;text-decoration:none;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:none;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#1448d0;}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--muted2);background:var(--white);}
+.btn-sm{padding:.35rem .75rem;font-size:.78rem;}
+.btn-danger-ghost{background:transparent;color:var(--danger);border:1px solid transparent;padding:.35rem .65rem;font-size:.8rem;}
+.btn-danger-ghost:hover{background:var(--danger-bg);border-color:#ffc9c9;}
+
+.section{max-width:860px;margin:2.5rem auto 0;padding:0 2rem 4rem;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;}
+.section-title{font-size:.78rem;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.07em;}
+
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
+
+.cal-card{
+  background:var(--white);border:1px solid var(--line);border-radius:14px;
+  padding:1.25rem;cursor:pointer;transition:all .15s;
+  text-decoration:none;color:inherit;display:block;position:relative;overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.03);
+}
+.cal-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),#6b9fff);
+  transform:scaleX(0);transform-origin:left;transition:transform .2s;
+}
+.cal-card:hover{border-color:var(--line2);box-shadow:0 4px 16px rgba(0,0,0,.07);transform:translateY(-2px);}
+.cal-card:hover::before{transform:scaleX(1);}
+
+.cal-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;}
+.cal-icon{width:36px;height:36px;background:var(--accent-bg);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.cal-menu-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:.2rem .4rem;border-radius:5px;line-height:1;transition:all .1s;position:relative;z-index:2;}
+.cal-menu-btn:hover{background:var(--paper);color:var(--text);}
+
+.cal-name{font-weight:600;font-size:.95rem;color:var(--ink);margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-url{font-family:'Geist Mono',monospace;font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.75rem;}
+
+.cal-chips{display:flex;flex-wrap:wrap;gap:.3rem;}
+.chip{display:inline-flex;align-items:center;gap:.25rem;padding:.12rem .5rem;border-radius:20px;font-size:.68rem;font-weight:500;}
+.chip-hide{background:#fff0f0;color:var(--danger);border:1px solid #ffd5d5;}
+.chip-rename{background:#f0faf5;color:var(--success);border:1px solid #b2f2d4;}
+.chip-none{background:var(--paper);color:var(--muted);border:1px solid var(--line);}
+
+.cal-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.9rem;padding-top:.75rem;border-top:1px solid var(--line);}
+.cal-ics-url{font-family:'Geist Mono',monospace;font-size:.66rem;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;}
+
+.ctx-menu{
+  position:fixed;background:var(--white);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:200;min-width:160px;padding:.35rem;
+  display:none;animation:menuIn .12s ease;
+}
+@keyframes menuIn{from{opacity:0;transform:scale(.95) translateY(-4px)}to{opacity:1;transform:none}}
+.ctx-menu.open{display:block;}
+.ctx-item{
+  display:flex;align-items:center;gap:.6rem;width:100%;background:none;border:none;
+  padding:.52rem .75rem;border-radius:7px;font-family:'Geist',sans-serif;font-size:.84rem;
+  color:var(--text);cursor:pointer;text-align:left;transition:background .1s;
+}
+.ctx-item:hover{background:var(--paper);}
+.ctx-item.danger{color:var(--danger);}
+.ctx-item.danger:hover{background:var(--danger-bg);}
+.ctx-divider{height:1px;background:var(--line);margin:.3rem 0;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(12,14,18,.45);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--white);border-radius:16px;padding:1.75rem;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.16);animation:modalIn .2s cubic-bezier(.34,1.56,.64,1);}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.modal h2{font-family:'Instrument Serif',serif;font-size:1.3rem;margin-bottom:.4rem;}
+.modal p{font-size:.875rem;color:var(--muted2);margin-bottom:1.25rem;}
+.modal-footer{display:flex;gap:.75rem;justify-content:flex-end;}
+
+.empty-state{text-align:center;padding:2.5rem;color:var(--muted);font-size:.875rem;}
+.empty-icon{font-size:2.2rem;margin-bottom:.6rem;opacity:.5;}
+
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--ink);color:#fff;
+  padding:.6rem 1.25rem;border-radius:100px;font-size:.84rem;
+  z-index:300;opacity:0;transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;display:flex;align-items:center;gap:.5rem;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-name">Cal Filter</span>
+    <span class="brand-dot"></span>
+    <span class="brand-sub">calendar.theon.no</span>
+  </div>
+  <a href="/logout" class="logout-btn">Sign out</a>
+</div>
+
+<div class="hero">
+  <h1>Your calendars,<br><em>filtered your way.</em></h1>
+  <p>Add any ICS calendar URL, set rules to hide or rename events, then subscribe to the clean feed in Apple Calendar.</p>
+
+  <div class="add-form">
+    <h2>Add a calendar</h2>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="newName" placeholder="e.g. Work Schedule">
+    </div>
+    <div class="field mono">
+      <label>Source URL (ICS)</label>
+      <input type="url" id="newUrl" placeholder="https://..." onkeydown="if(event.key==='Enter') addCalendar()">
+    </div>
+    <div class="form-footer">
+      <span class="form-hint">You can add filters after adding.</span>
+      <button class="btn btn-primary" onclick="addCalendar()">Add calendar →</button>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="calSection" style="display:none">
+  <div class="section-header">
+    <span class="section-title" id="calCount"></span>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+  <button class="ctx-item" onclick="ctxEdit()">✏️ Edit / Filters</button>
+  <button class="ctx-item" onclick="ctxCopyUrl()">📋 Copy ICS URL</button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item danger" onclick="ctxDelete()">🗑 Delete</button>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h2>Delete calendar?</h2>
+    <p>This removes the calendar and all its filters permanently.</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--danger)" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let calendars=[], ctxCalId=null;
+
+async function load(){
+  const res=await fetch('/api/calendars');
+  calendars=await res.json();
+  render();
+}
+
+function render(){
+  const sec=document.getElementById('calSection');
+  const grid=document.getElementById('calGrid');
+  document.getElementById('calCount').textContent=`${calendars.length} Calendar${calendars.length!==1?'s':''}`;
+  if(!calendars.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  grid.innerHTML=calendars.map(c=>{
+    const hc=c.hidden_keywords.length, rc=c.custom_renames.length;
+    const icsUrl=`${location.origin}/calendar/${c.id}.ics`;
+    return `<a class="cal-card" href="/cal/${c.id}">
+      <div class="cal-card-top">
+        <div class="cal-icon">📅</div>
+        <button class="cal-menu-btn" onclick="openCtx(event,'${c.id}')">⋯</button>
+      </div>
+      <div class="cal-name">${esc(c.name)}</div>
+      <div class="cal-url">${esc(c.url)}</div>
+      <div class="cal-chips">
+        ${hc?`<span class="chip chip-hide">🚫 ${hc} hidden</span>`:''}
+        ${rc?`<span class="chip chip-rename">✏️ ${rc} renamed</span>`:''}
+        ${!hc&&!rc?`<span class="chip chip-none">No filters yet</span>`:''}
+      </div>
+      <div class="cal-footer">
+        <span class="cal-ics-url">/calendar/${c.id}.ics</span>
+        <button class="btn btn-ghost btn-sm" onclick="event.preventDefault();copyText('${icsUrl}')">Copy URL</button>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+async function addCalendar(){
+  const name=document.getElementById('newName').value.trim();
+  const url=document.getElementById('newUrl').value.trim();
+  if(!url){toast('Please enter a URL','⚠️');return;}
+  const res=await fetch('/api/calendars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name||'My Calendar',url})});
+  if(!res.ok){toast('Failed to add','⚠️');return;}
+  const cal=await res.json();
+  document.getElementById('newName').value='';
+  document.getElementById('newUrl').value='';
+  toast('Calendar added!','✓');
+  await load();
+  setTimeout(()=>location.href=`/cal/${cal.id}`,600);
+}
+
+function openCtx(e,id){
+  e.preventDefault();e.stopPropagation();ctxCalId=id;
+  const m=document.getElementById('ctxMenu');
+  m.classList.add('open');
+  const r=e.currentTarget.getBoundingClientRect();
+  let top=r.bottom+4, left=r.left;
+  if(left+170>window.innerWidth)left=r.right-170;
+  m.style.top=top+'px';m.style.left=left+'px';
+}
+function closeCtx(){document.getElementById('ctxMenu').classList.remove('open');}
+function ctxEdit(){closeCtx();location.href=`/cal/${ctxCalId}`;}
+function ctxCopyUrl(){closeCtx();copyText(`${location.origin}/calendar/${ctxCalId}.ics`);}
+function ctxDelete(){closeCtx();document.getElementById('deleteModal').classList.add('open');}
+async function confirmDelete(){
+  await fetch(`/api/calendars/${ctxCalId}`,{method:'DELETE'});
+  closeModal();toast('Deleted','✓');await load();
+}
+function closeModal(){document.getElementById('deleteModal').classList.remove('open');}
+document.addEventListener('click',e=>{if(!document.getElementById('ctxMenu').contains(e.target))closeCtx();});
+
+function copyText(t){navigator.clipboard.writeText(t).then(()=>toast('Copied!','📋'));}
+function toast(msg,icon='✓'){
+  const el=document.getElementById('toast');
+  el.innerHTML=`<span>${icon}</span> ${msg}`;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+load();
+</script>
+</body>
+</html>
